@@ -2,34 +2,38 @@ require chromium.inc
 require chromium-unbundle.inc
 require gn-utils.inc
 
-inherit features_check gtk-icon-cache qemu
+inherit distro_features_check gtk-icon-cache qemu
 
 # The actual directory name in out/ is irrelevant for GN.
 OUTPUT_DIR = "out/Release"
 B = "${S}/${OUTPUT_DIR}"
 
 SRC_URI += " \
+        file://0001-Add-support-for-GCC-Compilers.patch \
+        file://0001-Revert-Use-noexcept-consistently-on-the-move-ctor-of.patch \
+        file://0001-TrackEventJSONExporter-HandleLegacyEvent-Use-std-mov.patch \
+        file://0001-webrequest-Fix-GCC-build-after-2d47b917314a.patch \
+        file://0001-GCC-7-workaround-remove-constexpr-ctor.patch \
+        file://0001-libstdc-do-not-assume-unique_ptr-has-ostream-operato.patch \
+        file://aarch64-skia-build-fix.patch \
         file://oe-clang-fixes.patch \
         file://v8-qemu-wrapper.patch \
         file://wrapper-extra-flags.patch \
         file://do-not-specify-march-on-arm.patch \
-        file://add_internal_define_armv7ve.patch \
-        file://delete_not_yet_released_clang_warnings.patch \
-        file://chromium-Move-CharAllocator-definition-to-a-header-f.patch \
-        file://0003-Fix-sandbox-Aw-snap-for-syscalls-403-and-407.patch \
-        file://0001-Revert-ui-gfx-linux-Remove-2-unnecessary-preprocesso.patch \
-        file://0001-Turn-TouchMove-to-async-after-the-first-GestureScrol.patch \
-        file://0001-Remove-dead-reloc-in-nonalloc-LD-flags.patch \
-        file://0001-add-missing-cstring-include.patch \
+        file://0005-Remove-banned-designated-initializer-list-usage-from.patch \
+        file://0006-GCC-add-std-move-to-return-to-base-Optional.patch \
+        file://0001-GCC-fix-another-GCC-bug-by-implementing-copy-assign-.patch \
 "
 
 SRC_URI_append_libc-musl = "\
+        file://musl/musl-include-fcntl.h-for-loff_t.patch \
         file://musl/musl_no_mallinfo.patch \
         file://musl/musl_no_execinfo.patch \
         file://musl/musl_TEMP_FAILURE_RETRY.patch \
         file://musl/musl_fix-stack.patch \
         file://musl/musl_breakpad.patch \
         file://musl/musl_fontconfig.patch \
+        file://musl/musl_secure_getenv.patch \
         file://musl/musl_libc_malloc.patch \
         file://musl/musl_gnu_libc-version.patch \
         file://musl/musl_resolver.patch \
@@ -37,13 +41,13 @@ SRC_URI_append_libc-musl = "\
         file://musl/musl_lss-match_syscalls.patch \
         file://musl/musl_crashpad.patch \
         file://musl/musl_replace_libc_fpstate.patch \
-        file://musl/musl_fix_stack_trace.patch \
-        file://musl/musl_portable_msghdr.patch \
-        file://musl/musl_no__environ.patch \
-        file://musl/musl_no_mallopt.patch \
-        file://musl/musl_undef_mmap64.patch \
-        file://musl/musl_no_sbrk.patch \
 "
+# This patch could be enabled for clang builds, one just needs to make it work.
+# On sumo and MACHINE="raspberrypi3", the build fails with errors such as
+#   /tmp/crc32_simd-01be44.s:86: Error: selected processor does not support `crc32b r0,r0,r5' in Thumb mode
+# Enabling this on GCC requires more work, see the comments in the patch itself
+# for directions.
+SRC_URI += "file://0001-zlib-GCC-Disable-CRC32-optimizations-on-ARM.patch"
 
 # Append instead of assigning; the gtk-icon-cache class inherited above also
 # adds packages to DEPENDS.
@@ -64,6 +68,7 @@ DEPENDS += " \
     jpeg \
     libdrm \
     libwebp \
+    libxml2 \
     libxslt \
     ninja-native \
     nodejs-native \
@@ -78,6 +83,8 @@ DEPENDS += " \
     qemu-native \
     virtual/libgl \
 "
+DEPENDS_append_x86 = " yasm-native"
+DEPENDS_append_x86-64 = " yasm-native"
 
 # The wrapper script we use from upstream requires bash.
 RDEPENDS_${PN} = "bash"
@@ -89,12 +96,6 @@ COMPATIBLE_MACHINE_armv7a = "(.*)"
 COMPATIBLE_MACHINE_armv7ve = "(.*)"
 COMPATIBLE_MACHINE_x86 = "(.*)"
 COMPATIBLE_MACHINE_x86-64 = "(.*)"
-
-# Also build the parts that are run on the host with clang.
-BUILD_AR_toolchain-clang = "llvm-ar"
-BUILD_CC_toolchain-clang = "clang"
-BUILD_CXX_toolchain-clang = "clang++"
-BUILD_LD_toolchain-clang = "clang"
 
 PACKAGECONFIG ??= "use-egl"
 
@@ -120,6 +121,7 @@ PACKAGECONFIG[proprietary-codecs] = ' \
 GN_ARGS = " \
         ${PACKAGECONFIG_CONFARGS} \
         is_component_build=${@bb.utils.contains('PACKAGECONFIG', 'component-build', 'true', 'false', d)} \
+        use_atk=${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'true', 'false', d)} \
         use_gnome_keyring=false \
         use_jumbo_build=${@bb.utils.contains('PACKAGECONFIG', 'jumbo-build', 'true', 'false', d)} \
         use_kerberos=false \
@@ -130,8 +132,7 @@ GN_ARGS = " \
 
 # Closure_compile needs to be disabled to avoid pulling in java dependencies,
 # which are typicaly not wanted. It started to happen after https://crrev.com/c/1278470
-# This argument was renamed to enable_js_type_check after https://crrev.com/c/2248564
-GN_ARGS += "enable_js_type_check=false"
+GN_ARGS += "closure_compile=false"
 
 # Make sure pkg-config, when used with the host's toolchain to build the
 # binaries we need to run on the host, uses the right pkg-config to avoid
@@ -153,8 +154,8 @@ GN_ARGS += "is_debug=false is_official_build=true"
 GN_ARGS += "use_custom_libcxx=false"
 
 # When using meta-clang, one can switch to using the lld linker
-# by using the ld-is-lld distro feature otherwise use gold linker
-GN_ARGS += "${@bb.utils.contains('DISTRO_FEATURES', 'ld-is-lld', 'use_lld=true use_gold=false', 'use_lld=false use_gold=true', d)}"
+# by using the ld-is-lld distro feature.
+GN_ARGS += "use_lld=${@bb.utils.contains('DISTRO_FEATURES', 'ld-is-lld', 'true', 'false', d)}"
 
 # By default, passing is_official_build=true to GN causes its symbol_level
 # variable to be set to "2". This means the compiler will be passed "-g2" and
@@ -207,14 +208,16 @@ GN_ARGS += "enable_nacl=false"
 # let Yocto handle everything.
 GN_ARGS += "use_sysroot=false"
 
-# The clang version used to build this recipe may be older than upstream
-# Chromium's, which can cause unexpected warnings to show up. They should not
-# cause the build to fail.
+# Upstream Chromium uses clang on Linux, and GCC is not regularly tested. This
+# means new GCC releases can introduce build failures as Chromium uses "-Wall
+# -Werror" by default and we do not have much control over which warnings GCC
+# decides to include in -Wall.
 GN_ARGS += "treat_warnings_as_errors=false"
 
-# Enabling Control Flow Integrity requires more research (i.e. we need to
-# figure out when it was first deemed stable by Chromium). Upstream only
-# enables this for x86-64 right now.
+# As of M63, we explicitly need to set is_cfi to false, otherwise we fail the
+# following assertion in //build/config/sanitizers/sanitizers.gni:
+#   assert(!is_cfi || is_clang,
+#          "is_cfi requires setting is_clang = true in 'gn args'")
 GN_ARGS += "is_cfi=false"
 
 # Disable activation of field trial tests that can cause problems in
@@ -244,11 +247,12 @@ GN_ARGS += ' \
         custom_toolchain="//build/toolchain/yocto:yocto_target" \
         gold_path="" \
         host_toolchain="//build/toolchain/yocto:yocto_native" \
-        is_clang=true \
+        is_clang=${@is_default_cc_clang(d)} \
         clang_base_path="${@clang_install_path(d)}" \
         clang_use_chrome_plugins=false \
         linux_use_bundled_binutils=false \
         target_cpu="${@gn_target_arch_name(d)}" \
+        use_gold=${@bb.utils.contains('DISTRO_FEATURES', 'ld-is-gold', 'true', 'false', d)} \
         v8_snapshot_toolchain="//build/toolchain/yocto:yocto_target" \
 '
 
@@ -387,7 +391,7 @@ do_install() {
 	install -m 0644 chromium.desktop ${D}${datadir}/applications/chromium.desktop
 
 	# Install icons.
-	for size in 16 24 32 48 64 128 256; do
+	for size in 16 22 24 32 48 64 128 256; do
 		install -d ${D}${datadir}/icons/hicolor/${size}x${size}
 		install -d ${D}${datadir}/icons/hicolor/${size}x${size}/apps
 		for dirname in "chromium" "default_100_percent/chromium"; do

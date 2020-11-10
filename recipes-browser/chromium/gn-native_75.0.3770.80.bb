@@ -3,6 +3,7 @@
 # work with the GN version provided with it.
 
 require chromium.inc
+require chromium-upstream-tarball.inc
 
 inherit native
 
@@ -14,8 +15,8 @@ S = "${WORKDIR}/chromium-${PV}"
 # evils.
 B = "${S}/out_bootstrap"
 
-SRC_URI += " \
-        file://0001-Pass-no-static-libstdc-to-gen.py.patch \
+SRC_URI += "\
+        file://0001-gen-Stop-passing-static-libstdc-to-the-compiler.patch \
 "
 
 # The build system expects the linker to be invoked via the compiler. If we use
@@ -23,11 +24,7 @@ SRC_URI += " \
 # some of the arguments passed to it.
 BUILD_LD = "${CXX}"
 
-# Use LLVM's ar rather than binutils'. Depending on the optimizations enabled
-# in the build ar(1) may not be enough.
-BUILD_AR = "llvm-ar"
-
-DEPENDS = "clang-native ninja-native"
+DEPENDS = "ninja-native"
 
 do_configure[noexec] = "1"
 
@@ -39,5 +36,3 @@ do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 ${S}/out/Release/gn ${D}${bindir}/gn
 }
-
-INSANE_SKIP_${PN} += "already-stripped"
