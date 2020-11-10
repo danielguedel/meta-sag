@@ -3,7 +3,6 @@
 # work with the GN version provided with it.
 
 require chromium.inc
-require chromium-upstream-tarball.inc
 
 inherit native
 
@@ -24,7 +23,11 @@ SRC_URI += "\
 # some of the arguments passed to it.
 BUILD_LD = "${CXX}"
 
-DEPENDS = "ninja-native"
+# Use LLVM's ar rather than binutils'. Depending on the optimizations enabled
+# in the build ar(1) may not be enough.
+BUILD_AR = "llvm-ar"
+
+DEPENDS = "clang-native ninja-native"
 
 do_configure[noexec] = "1"
 
@@ -36,3 +39,5 @@ do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 ${S}/out/Release/gn ${D}${bindir}/gn
 }
+
+INSANE_SKIP_${PN} += "already-stripped"
