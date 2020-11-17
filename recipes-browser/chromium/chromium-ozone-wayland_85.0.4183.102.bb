@@ -1,22 +1,14 @@
 require chromium-gn.inc
 
-SRC_URI += " \
-        file://V4L2/0001-Add-support-for-V4L2VDA-on-Linux.patch \
-        file://V4L2/0002-Add-mmap-via-libv4l-to-generic_v4l2_device.patch \
-"
-
 REQUIRED_DISTRO_FEATURES = "wayland"
 
 DEPENDS += "\
+        at-spi2-atk \
         libxkbcommon \
         virtual/egl \
         wayland \
         wayland-native \
 "
-
-# Chromium can use v4l2 device for hardware accelerated video decoding. Make sure that
-# /dev/video-dec exists.
-PACKAGECONFIG[use-linux-v4l2] = "use_v4l2_codec=true use_v4lplugin=true use_linux_v4l2_only=true"
 
 GN_ARGS += "\
         ${PACKAGECONFIG_CONFARGS} \
