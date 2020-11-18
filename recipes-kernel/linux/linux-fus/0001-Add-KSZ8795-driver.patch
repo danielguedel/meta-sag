@@ -1,0 +1,25 @@
+From 28fc4aefdeda3b25599482f5db0f3eb6ce6e9426 Mon Sep 17 00:00:00 2001
+Message-Id: <28fc4aefdeda3b25599482f5db0f3eb6ce6e9426.1605537364.git.gerbach@fs-net.de>
+In-Reply-To: <95a57ed3e63c00e3555f819bd6327469112f2d97.1605537364.git.gerbach@fs-net.de>
+References: <95a57ed3e63c00e3555f819bd6327469112f2d97.1605537364.git.gerbach@fs-net.de>
+From: Philipp Gerbach <gerbach@fs-net.de>
+Date: Mon, 16 Nov 2020 14:05:36 +0000
+Subject: [PATCH 2/3] Add KSZ8795 driver
+
+---
+ arch/arm64/configs/fsimx8mm_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/fsimx8mm_defconfig b/arch/arm64/configs/fsimx8mm_defconfig
+index c52efe9271..80a9c6746a 100644
+--- a/arch/arm64/configs/fsimx8mm_defconfig
++++ b/arch/arm64/configs/fsimx8mm_defconfig
+@@ -672,3 +672,5 @@ CONFIG_DEBUG_KERNEL=y
+ # CONFIG_FTRACE is not set
+ CONFIG_MEMTEST=y
+ CONFIG_HID_MULTITOUCH=y
++CONFIG_NET_DSA_MICROCHIP_KSZ8795=y
++CONFIG_NET_DSA_MICROCHIP_KSZ8795_SPI=y
+-- 
+2.14.5
+

@@ -1,0 +1,26 @@
+From bbd44c7fe9ffc765a3cff612f3bda33aa5c3fab9 Mon Sep 17 00:00:00 2001
+Message-Id: <bbd44c7fe9ffc765a3cff612f3bda33aa5c3fab9.1601973709.git.gerbach@fs-net.de>
+From: Philipp Gerbach <gerbach@fs-net.de>
+Date: Tue, 6 Oct 2020 08:41:43 +0000
+Subject: [PATCH] Set Schurter DT as default
+
+---
+ include/configs/fsimx8mx.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/configs/fsimx8mx.h b/include/configs/fsimx8mx.h
+index 6f0bba95e..938ebbf10 100644
+--- a/include/configs/fsimx8mx.h
++++ b/include/configs/fsimx8mx.h
+@@ -299,7 +299,7 @@
+ 	"m4_uart4=disable\0"						\
+ 	FSBOOTDELAY							\
+ 	"fdt_high=0xffffffffffffffff\0"					\
+-	"set_bootfdt=setenv bootfdt ${platform}.dtb\0"			\
++	"set_bootfdt=setenv bootfdt ${platform}-Schurter.dtb\0"			\
+ 	"set_bootargs=setenv bootargs ${console} ${login} ${mtdparts} ${network} ${rootfs} ${mode} ${init} ${extra}\0"
+ #endif
+ 
+-- 
+2.14.5
+

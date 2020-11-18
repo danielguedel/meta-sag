@@ -1,0 +1,28 @@
+From 29c109dde6be73598d5eff01b5e1b2963897ae80 Mon Sep 17 00:00:00 2001
+Message-Id: <29c109dde6be73598d5eff01b5e1b2963897ae80.1601917284.git.gerbach@fs-net.de>
+In-Reply-To: <68698f59256d81e95897f8dd1f5c67edc3bbb574.1601917284.git.gerbach@fs-net.de>
+References: <68698f59256d81e95897f8dd1f5c67edc3bbb574.1601917284.git.gerbach@fs-net.de>
+From: Philipp Gerbach <gerbach@fs-net.de>
+Date: Mon, 28 Sep 2020 11:52:10 +0000
+Subject: [PATCH 5/7] Fix cd-gpio polarisation for imx8mx-fert8
+
+---
+ arch/arm/dts/picocoremx8mx.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/dts/picocoremx8mx.dts b/arch/arm/dts/picocoremx8mx.dts
+index 2d583d561..97bef5e3d 100644
+--- a/arch/arm/dts/picocoremx8mx.dts
++++ b/arch/arm/dts/picocoremx8mx.dts
+@@ -385,7 +385,7 @@
+ 	pinctrl-2 = <&pinctrl_usdhc1_200mhz>, <&pinctrl_usdhc1_gpio>;
+ 	bus-width = <4>;
+ #ifdef CONFIG_PICOCOREMX8MX_SD_A_CD
+-	cd-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
++	cd-gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
+ #endif
+ #ifdef CONFIG_PICOCOREMX8MX_SD_A_WP
+ 	wp-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+-- 
+2.14.5
+

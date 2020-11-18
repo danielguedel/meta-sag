@@ -1,0 +1,30 @@
+From 1ddf7fad3529a2e6d0c8c874150719732fe9cf24 Mon Sep 17 00:00:00 2001
+Message-Id: <1ddf7fad3529a2e6d0c8c874150719732fe9cf24.1605537364.git.gerbach@fs-net.de>
+In-Reply-To: <95a57ed3e63c00e3555f819bd6327469112f2d97.1605537364.git.gerbach@fs-net.de>
+References: <95a57ed3e63c00e3555f819bd6327469112f2d97.1605537364.git.gerbach@fs-net.de>
+From: Philipp Gerbach <gerbach@fs-net.de>
+Date: Mon, 16 Nov 2020 14:35:55 +0000
+Subject: [PATCH 3/3] HOTFIX-Reversed-card-detect-logic
+
+---
+ arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts b/arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts
+index 64c276d991..e0add82feb 100644
+--- a/arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts
++++ b/arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts
+@@ -203,3 +202,10 @@
+ &i2c_gpio {
+ 	status = "disabled";
+ };
++
++/* HOTFIX: Reversed card detect logic on PADA-10064-001 REV 1.0 */
++&usdhc1 {
++
++	cd-gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
++
++};
+-- 
+2.14.5
+
