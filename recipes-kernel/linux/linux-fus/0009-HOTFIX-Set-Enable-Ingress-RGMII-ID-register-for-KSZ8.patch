@@ -1,0 +1,113 @@
+From 4ce412803cbbade3d91cc751458bf30b52eac3fd Mon Sep 17 00:00:00 2001
+Message-Id: <4ce412803cbbade3d91cc751458bf30b52eac3fd.1607691221.git.gerbach@fs-net.de>
+From: Philipp Gerbach <gerbach@fs-net.de>
+Date: Fri, 11 Dec 2020 12:52:56 +0000
+Subject: [PATCH] HOTFIX: Set Enable Ingress RGMII-ID register for KSZ8794
+
+Enable Ingress RGMII-ID Mode is set to 0 by default for KSZ8794.
+Due to the baseboard layout, we need to set it to use basic switch
+functionality.
+
+Use the spi_ks8995 driver to set it.
+
+This will not be necessary with the new PicocoreMX8MM with an integrated
+switch.
+---
+ arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts | 28 +---------------------
+ arch/arm64/configs/fsimx8mm_defconfig              |  2 +-
+ drivers/net/phy/spi_ks8995.c                       | 11 ++++++++-
+ 3 files changed, 12 insertions(+), 29 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts b/arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts
+index 5f5bb1de1b..8f48493b7b 100755
+--- a/arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts
++++ b/arch/arm64/boot/dts/F+S/picocoremx8mx-Schurter.dts
+@@ -121,42 +121,16 @@
+ };
+ 
+ &ecspi1 {
+-
+  	spidev@0 {
+ 		status = "disabled";
+ 	};
+ 
+ 	ksz8794: ksz8794@0 {
+-		compatible = "microchip,ksz8794";
++		compatible = "micrel,ksz8795";
+ 		reg = <0>;
+ 		phy-mode = "rgmii-id";
+ 		spi-max-frequency = <1000000>;
+ 		status = "okay";
+-		ports {
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			port@0 {
+-				reg = <0>;
+-				label = "lan1";
+-			};
+-			port@1 {
+-				reg = <1>;
+-				label = "lan2";
+-			};
+-			port@2 {
+-				reg = <2>;
+-				label = "lan3";
+-			};
+-			port@3 {
+-				reg = <3>;
+-				label = "cpu";
+-				ethernet = <&fec1>;
+-				fixed-link {
+-					speed = <1000>;
+-					full-duplex;
+-				};
+-			};
+-		};
+ 	};
+ };
+ 
+diff --git a/arch/arm64/configs/fsimx8mm_defconfig b/arch/arm64/configs/fsimx8mm_defconfig
+index 010fc0cf6c..9c9f6a5a11 100644
+--- a/arch/arm64/configs/fsimx8mm_defconfig
++++ b/arch/arm64/configs/fsimx8mm_defconfig
+@@ -245,7 +245,7 @@ CONFIG_VIRTIO_NET=y
+ CONFIG_NET_DSA_MICROCHIP_KSZ_COMMON=y
+ CONFIG_NET_DSA_MICROCHIP_KSZ9477=y
+ CONFIG_NET_DSA_MICROCHIP_KSZ9477_I2C=y
+-
++CONFIG_MICREL_KS8995MA=y
+ CONFIG_ETHERNET=y
+ CONFIG_MDIO=m
+ CONFIG_NET_VENDOR_3COM=y
+diff --git a/drivers/net/phy/spi_ks8995.c b/drivers/net/phy/spi_ks8995.c
+index 7475cef17c..a666987b61 100644
+--- a/drivers/net/phy/spi_ks8995.c
++++ b/drivers/net/phy/spi_ks8995.c
+@@ -87,6 +87,7 @@
+ #define CHIPID_M		0
+ #define KS8995_CHIP_ID		0x00
+ #define KSZ8864_CHIP_ID		0x01
++#define KSZ8794_CHIP_ID		0x06
+ #define KSZ8795_CHIP_ID		0x09
+ 
+ #define KS8995_CMD_WRITE	0x02U
+@@ -386,7 +387,15 @@ static int ks8995_get_revision(struct ks8995_switch *ks)
+ 
+ 		if (get_chip_id(id1) == ks->chip->chip_id) {
+ 			ks->revision_id = get_chip_rev(id1);
+-		} else {
++		/* HOTFIX: Set RGMII Internal Delay (ID) Ingress Enable for SCHURTER Board */
++		} else if (get_chip_id(id1) == KSZ8794_CHIP_ID){
++			uint8_t temp_reg;
++			ks->revision_id = get_chip_rev(id1);
++			ks8995_read_reg(ks, 0x56, &temp_reg);
++			temp_reg |= 0x1 << 4;
++			ks8995_write_reg(ks, 0x56, temp_reg);
++		}
++		else {
+ 			dev_err(&ks->spi->dev, "unsupported chip id for KSZ8795 family: 0x%02x\n",
+ 				id1);
+ 			err = -ENODEV;
+-- 
+2.14.5
+
